@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# Cristina del Río. #ejemplo: http://localhost:1234/9/mas/8
+# Reutilizo parte del código que tenía en servidor-random.
 """
 Simple HTTP Server version 2: reuses the port, so it can be
 restarted right after it has been killed. Accepts connects from
@@ -10,7 +12,7 @@ SAT and SARO subjects (Universidad Rey Juan Carlos)
 """
 
 import socket
-import random
+import calculadora
 
 # Create a TCP objet socket and bind it to a port
 # Port should be 80, but since it needs root privileges,
@@ -25,25 +27,37 @@ mySocket.bind(('localhost', 1234))
 # Queue a maximum of 5 TCP connection requests
 mySocket.listen(5)
 
-
-
 # Accept connections, read incoming data, and answer back an HTML page
-#  (in an almost-infinite loop; the loop can be stopped with Ctrl+C)
+# (in an almost-infinite loop; the loop can be stopped with Ctrl+C)
 try:
     while True:
         print('Waiting for connections')
         (recvSocket, address) = mySocket.accept()
-        print('Request received:')
-        print(recvSocket.recv(2048))
-        print('Answering back...')
-        url = str(random.randint(0, 1000000000000000))
-        print('Answering back...')
-        recvSocket.send(bytes("HTTP/1.1 200 OK\r\n\r\n" +
-                              "<html><body><h1>Hola</h1> " +
-                              "</p><a href=" + url + ">Dame otra</a>" +
-                              "</body></html>" +
-                              "\r\n", "utf-8"))
+        print('HTTP Request received:')
+        request = str(recvSocket.recv(2048), 'utf-8')
+        resource = request.split()[1]  # Hay que poner: /num1/operacion/num2
+        print(resource)
+        _, op1, operacion, op2 = resource.split('/')  # Para ir separando con /
+
+        try:
+            num1 = float(op1)
+            num2 = float(op2)
+            resultado = calculadora.funciones[operacion](num1, num2)
+        except ValueError:
+            resultado = "Error, solo puedes meter operandos que sean numeros."
+        except KeyError:
+            resultado = "Error: mas, menos, multiplicado, dividido, elevado"
+
+        # Respuesta:
+        recvSocket.send(bytes(
+                        "HTTP/1.1 200 OK\r\n\r\n" +
+                        "<html><body><h1>Bienvenido a la calculadora!</h1>" +
+                        "<p>El resultado de la operacion es: " +
+                        str(resultado) +
+                        "</p></body></html>" +
+                        "\r\n", "utf-8"))
         recvSocket.close()
+
 except KeyboardInterrupt:
-    print("Closing binded socket")
+    print("\nClosing binded socket")
 mySocket.close()
